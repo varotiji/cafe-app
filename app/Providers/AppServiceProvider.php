@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Gate; // Tambahkan ini
+use App\Models\User; // Tambahkan ini
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Definisikan aturan: admin-only hanya untuk user dengan role 'admin'
+        Gate::define('admin-only', function (User $user) {
+            return $user->role === 'admin';
+        });
     }
 }
