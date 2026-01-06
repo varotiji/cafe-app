@@ -23,23 +23,31 @@ class CafeController extends Controller
             'items' => 'required'
         ]);
 
-        // 1. Simpan Transaksi
+        // CEK STOK DULU SEBELUM SIMPAN
+        foreach ($request->items as $item) {
+            $product = Product::where('name', $item['name'])->first();
+            if (!$product || $product->stock < $item['qty']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Stok ' . $item['name'] . ' tidak cukup! (Sisa: ' . ($product->stock ?? 0) . ')'
+                ], 400); // Kirim error jika stok kurang
+            }
+        }
+
+        // Jika stok aman, baru simpan transaksi
         $transaction = Transaction::create([
             'total_price' => $request->total_price,
             'items' => $request->items,
         ]);
 
-        // 2. Logika Kurangi Stok
+        // Kurangi Stok
         foreach ($request->items as $item) {
-            $product = Product::where('name', $item['name'])->first();
-            if ($product) {
-                $product->decrement('stock', $item['qty']);
-            }
+            Product::where('name', $item['name'])->decrement('stock', $item['qty']);
         }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Transaksi berhasil dan stok diperbarui!',
+            'message' => 'Transaksi berhasil!',
             'transaction_id' => $transaction->id
         ]);
     } catch (\Exception $e) {
@@ -53,5 +61,34 @@ class CafeController extends Controller
     {
         $transactions = Transaction::latest()->get();
         return view('history', compact('transactions'));
+    }
+
+    // Fungsi Dashboard dipindahkan ke dalam class
+    public function dashboard()
+    {
+        $totalPendapatan = Transaction::sum('total_price');
+        $totalTransaksi = Transaction::count();
+
+        // Mengambil semua transaksi untuk menghitung produk terlaris
+        $transactions = Transaction::all();
+        $produkTerjual = [];
+
+        foreach ($transactions as $t) {
+            // Memastikan items di-decode jika tersimpan sebagai JSON string
+            $items = is_string($t->items) ? json_decode($t->items, true) : $t->items;
+
+            if (is_array($items)) {
+                foreach ($items as $item) {
+                    $name = $item['name'];
+                    $qty = $item['qty'];
+                    $produkTerjual[$name] = ($produkTerjual[$name] ?? 0) + $qty;
+                }
+            }
+        }
+
+        arsort($produkTerjual); // Urutkan dari yang terbanyak
+        $bestSeller = array_slice($produkTerjual, 0, 5); // Ambil 5 teratas
+
+        return view('dashboard', compact('totalPendapatan', 'totalTransaksi', 'bestSeller'));
     }
 }

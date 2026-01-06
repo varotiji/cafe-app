@@ -14,9 +14,14 @@
         <div class="flex-1 p-8 overflow-y-auto">
             <div class="flex justify-between items-center mb-8">
                 <h1 class="text-3xl font-bold text-orange-600 uppercase tracking-wider">Cafe Menu</h1>
-                <a href="/history" class="bg-white border border-gray-300 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-100 transition shadow-sm">
-                    📜 Riwayat Penjualan
-                </a>
+                <div class="flex gap-2">
+                    <a href="/dashboard" class="bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-600 transition shadow-sm">
+                        📊 Dashboard
+                    </a>
+                    <a href="/history" class="bg-white border border-gray-300 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-100 transition shadow-sm">
+                        📜 Riwayat Penjualan
+                    </a>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -26,16 +31,19 @@
                         <span class="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase">
                             {{ $product->category->name }}
                         </span>
-                        <span class="text-gray-400 text-xs">Stok: {{ $product->stock }}</span>
+                        <span class="text-gray-400 text-xs font-bold {{ $product->stock <= 5 ? 'text-red-500' : '' }}">
+                            Stok: {{ $product->stock }}
+                        </span>
                     </div>
                     <h2 class="text-lg font-bold mt-3 text-gray-800">{{ $product->name }}</h2>
                     <p class="text-orange-500 font-bold text-xl mt-2">
                         Rp {{ number_format($product->price, 0, ',', '.') }}
                     </p>
                     <button
-                        onclick="addToCart('{{ $product->name }}', {{ $product->price }})"
-                        class="w-full mt-4 bg-orange-500 text-white py-2.5 rounded-xl font-semibold hover:bg-orange-600 active:scale-95 transition-all">
-                        Tambah Pesanan
+                        onclick="addToCart('{{ $product->name }}', {{ $product->price }}, {{ $product->stock }})"
+                        class="w-full mt-4 bg-orange-500 text-white py-2.5 rounded-xl font-semibold hover:bg-orange-600 active:scale-95 transition-all {{ $product->stock <= 0 ? 'bg-gray-300 cursor-not-allowed' : '' }}"
+                        {{ $product->stock <= 0 ? 'disabled' : '' }}>
+                        {{ $product->stock <= 0 ? 'Stok Habis' : 'Tambah Pesanan' }}
                     </button>
                 </div>
                 @endforeach
@@ -72,9 +80,13 @@
     <script>
         let cart = [];
 
-        function addToCart(name, price) {
+        function addToCart(name, price, maxStock) {
             const existingItem = cart.find(item => item.name === name);
+
             if (existingItem) {
+                if (existingItem.qty >= maxStock) {
+                    return Swal.fire('Limit!', 'Stok di dapur cuma sisa ' + maxStock, 'warning');
+                }
                 existingItem.qty += 1;
             } else {
                 cart.push({ name, price, qty: 1 });
@@ -165,11 +177,16 @@
                         if (data.status === 'success') {
                             Swal.fire('Berhasil!', data.message, 'success').then(() => {
                                 printReceipt(data.transaction_id, total, cart);
-                                cart = [];
-                                renderCart();
-                                window.location.href = '/history';
+                                // Refresh halaman agar stok di UI terupdate
+                                window.location.reload();
                             });
+                        } else {
+                            // Tampilkan pesan error stok tidak cukup dari server
+                            Swal.fire('Gagal!', data.message, 'error');
                         }
+                    })
+                    .catch(err => {
+                        Swal.fire('Error!', 'Terjadi kesalahan sistem', 'error');
                     });
                 }
             });
