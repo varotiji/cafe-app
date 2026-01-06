@@ -91,4 +91,33 @@ class CafeController extends Controller
 
         return view('dashboard', compact('totalPendapatan', 'totalTransaksi', 'bestSeller'));
     }
+
+    public function destroy($id)
+{
+    try {
+        $transaction = Transaction::findOrFail($id);
+
+        // BALIKIN STOK SEBELUM DIHAPUS
+        foreach ($transaction->items as $item) {
+            $product = Product::where('name', $item['name'])->first();
+            if ($product) {
+                $product->increment('stock', $item['qty']);
+            }
+        }
+
+        // HAPUS TRANSAKSINYA
+        $transaction->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Transaksi dihapus & stok telah dikembalikan!'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Gagal menghapus: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
 }
