@@ -30,30 +30,49 @@
 
             <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
                 @foreach($products as $product)
-                <div class="product-card bg-white p-6 rounded-[2rem] shadow-md hover:shadow-orange-200 hover:-translate-y-2 transition-all border border-orange-50 group relative overflow-hidden" data-category="{{ $product->category->name }}">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="text-orange-500 text-[10px] font-black uppercase tracking-widest bg-orange-50 px-3 py-1 rounded-lg">{{ $product->category->name }}</span>
+                <div class="product-card bg-white rounded-[2rem] shadow-md hover:shadow-orange-200 hover:-translate-y-2 transition-all border border-orange-50 overflow-hidden group relative flex flex-col" data-category="{{ $product->category->name }}">
 
-                        <span class="text-[10px] font-black px-3 py-1 rounded-full uppercase transition-colors
-                            @if($product->stock <= 0) bg-gray-200 text-gray-500
-                            @elseif($product->stock <= 5) bg-red-100 text-red-600 animate-pulse
-                            @else bg-green-100 text-green-600 @endif">
-                            @if($product->stock <= 0) Habis
-                            @elseif($product->stock <= 5) ⚠️ Sisa {{ $product->stock }}
-                            @else Ready: {{ $product->stock }} @endif
-                        </span>
+                    <div class="relative h-44 w-full overflow-hidden bg-gray-100">
+                        @if($product->image)
+                            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                        @else
+                            <div class="flex items-center justify-center h-full text-gray-300 font-bold text-xs uppercase italic">No Image</div>
+                        @endif
+
+                        <div class="absolute top-4 right-4">
+                            <span class="text-[10px] font-black px-3 py-1 rounded-full uppercase shadow-sm
+                                @if($product->stock <= 0) bg-gray-200 text-gray-500
+                                @elseif($product->stock <= 5) bg-red-500 text-white animate-pulse
+                                @else bg-white/90 text-green-600 backdrop-blur-md @endif">
+                                @if($product->stock <= 0) Habis
+                                @elseif($product->stock <= 5) ⚠️ Sisa {{ $product->stock }}
+                                @else Ready: {{ $product->stock }} @endif
+                            </span>
+                        </div>
                     </div>
 
-                    <h2 class="product-name text-xl font-black text-gray-800 leading-tight h-14 mb-2 uppercase tracking-tight">{{ $product->name }}</h2>
-                    <p class="text-2xl font-black text-orange-600 tracking-tighter mb-4">Rp {{ number_format($product->price, 0, ',', '.') }}</p>
+                    <div class="p-6 flex flex-col flex-1">
+                        <span class="text-orange-500 text-[9px] font-black uppercase tracking-widest bg-orange-50 px-2 py-1 rounded-md self-start">{{ $product->category->name }}</span>
 
-                    <button
-                        onclick="addToCart('{{ $product->name }}', {{ $product->price }}, {{ $product->stock }})"
-                        class="w-full py-4 rounded-2xl font-black text-xs tracking-widest transition-all active:scale-95 shadow-md uppercase
-                        {{ $product->stock <= 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-800 text-white hover:bg-orange-500' }}"
-                        {{ $product->stock <= 0 ? 'disabled' : '' }}>
-                        {{ $product->stock <= 0 ? 'Habis' : 'Tambah +' }}
-                    </button>
+                        <h2 class="product-name text-lg font-black text-gray-800 leading-tight mt-2 uppercase tracking-tight">{{ $product->name }}</h2>
+
+                        <p class="text-gray-400 text-[11px] leading-relaxed mt-1 line-clamp-2 italic min-h-[32px]">
+                            {{ $product->description ?? 'Nikmati menu spesial kami dengan cita rasa autentik.' }}
+                        </p>
+
+                        <div class="flex justify-between items-center mt-auto pt-4">
+                            <p class="text-xl font-black text-orange-600 tracking-tighter">Rp {{ number_format($product->price, 0, ',', '.') }}</p>
+                            <button
+                                onclick="addToCart('{{ $product->name }}', {{ $product->price }}, {{ $product->stock }})"
+                                class="p-3 rounded-xl transition-all shadow-lg active:scale-90
+                                {{ $product->stock <= 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-900 text-white hover:bg-orange-500' }}"
+                                {{ $product->stock <= 0 ? 'disabled' : '' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 @endforeach
             </div>
@@ -139,7 +158,6 @@
         function removeFromCart(index) { cart.splice(index, 1); renderCart(); }
         function clearCart() { cart = []; renderCart(); }
 
-        // FUNGSI PRINT STRUK (KEMBALI HADIR)
         function printReceipt(transactionId, items, totalPrice, cash, change) {
             let receiptContent = `
                 <div style="font-family: 'Courier New', Courier, monospace; width: 280px; padding: 20px; color: #000;">
@@ -196,9 +214,7 @@
                         body: JSON.stringify({ total_price: total, items: cart })
                     }).then(res => res.json()).then(data => {
                         if (data.status === 'success') {
-                            // PANGGIL FUNGSI PRINT DISINI
                             printReceipt(data.transaction_id, cart, total, cash, cash - total);
-
                             Swal.fire({ icon: 'success', title: 'Berhasil!', showConfirmButton: false, timer: 1500 })
                             .then(() => window.location.reload());
                         }
@@ -230,5 +246,7 @@
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #ffedd5; border-radius: 10px; }
+        .product-card { transition: all 0.3s ease; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </x-app-layout>

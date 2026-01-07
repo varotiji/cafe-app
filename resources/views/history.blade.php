@@ -6,6 +6,23 @@
     <title>Riwayat Transaksi - Sistem Kasir</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* CSS Khusus Cetak Thermal */
+        @media print {
+            body * { visibility: hidden !important; }
+            #print-area, #print-area * { visibility: visible !important; }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 80mm;
+                background: white;
+                color: black !important;
+            }
+            .page-break { page-break-after: always; display: block; height: 1px; }
+        }
+        .struk-font { font-family: 'Courier New', Courier, monospace; line-height: 1.2; }
+    </style>
 </head>
 <body class="bg-gray-50 p-8">
     <div class="max-w-5xl mx-auto">
@@ -40,17 +57,27 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex flex-wrap gap-2">
-                                @foreach($transaction->items as $item)
-                                <span class="bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
-                                    {{ $item['qty'] }}x {{ $item['name'] }}
-                                </span>
-                                @endforeach
+                                @if(is_array($transaction->items))
+                                    @foreach($transaction->items as $item)
+                                        <span class="bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
+                                            {{ $item['qty'] ?? '0' }}x {{ $item['name'] ?? 'Menu' }}
+                                        </span>
+                                    @endforeach
+                                @else
+                                    <span class="text-xs text-gray-500 italic">{{ $transaction->items }}</span>
+                                @endif
                             </div>
                         </td>
                         <td class="px-6 py-4 text-right font-bold text-gray-800">
                             Rp {{ number_format($transaction->total_price, 0, ',', '.') }}
                         </td>
-                        <td class="px-6 py-4 text-center">
+                        <td class="px-6 py-4 text-center space-x-2">
+                            <button onclick='preparePrint({!! json_encode($transaction) !!})' class="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white p-2 rounded-lg transition border border-blue-100 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                            </button>
+
                             <button onclick="deleteTransaction({{ $transaction->id }})" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-lg transition border border-red-100 shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -60,33 +87,85 @@
                     </tr>
                     @endforeach
                 </tbody>
-                <tfoot class="bg-orange-50">
-                    <tr>
-                        <td colspan="3" class="px-6 py-4 font-bold text-orange-800 text-right uppercase tracking-wider">
-                            Total Pendapatan Keseluruhan
-                        </td>
-                        <td class="px-6 py-4 text-right text-xl font-black text-orange-600">
-                            Rp {{ number_format($transactions->sum('total_price'), 0, ',', '.') }}
-                        </td>
-                        <td class="bg-orange-100"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
-
-        <p class="text-center text-gray-400 text-xs mt-6 italic">Data ini diperbarui secara real-time dari database.</p>
     </div>
 
+    <div id="print-area" class="struk-font" style="display:none;"></div>
+
     <script>
+        function preparePrint(data) {
+            const printArea = document.getElementById('print-area');
+            printArea.style.display = 'block'; // Munculkan dulu agar bisa diisi data
+
+            const date = new Date(data.created_at).toLocaleString('id-ID', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            let itemsHtml = '';
+            let dapurItemsHtml = '';
+            const items = typeof data.items === 'string' ? JSON.parse(data.items) : data.items;
+
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    itemsHtml += `
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 2px; font-size: 12px;">
+                            <span>${item.qty}x ${item.name}</span>
+                            <span>${(item.qty * (item.price || 0)).toLocaleString('id-ID')}</span>
+                        </div>`;
+
+                    dapurItemsHtml += `
+                        <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px;">
+                            ${item.qty}x ${item.name}
+                        </div>`;
+                });
+            }
+
+            printArea.innerHTML = `
+                <div style="width: 75mm; padding: 10px; color: black;">
+                    <center>
+                        <h2 style="margin:0; font-size: 18px;">CAFE PREMIUM</h2>
+                        <p style="font-size:12px; margin:0;">Nota Pelanggan #${data.id}</p>
+                        <p style="font-size:11px; margin:0;">${date}</p>
+                    </center>
+                    <hr style="border-top: 1px dashed black; margin: 8px 0;">
+                    ${itemsHtml}
+                    <hr style="border-top: 1px dashed black; margin: 8px 0;">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size: 13px;">
+                        <span>TOTAL</span>
+                        <span>Rp ${data.total_price.toLocaleString('id-ID')}</span>
+                    </div>
+                    <center style="margin-top:10px; font-size:10px;">Terima Kasih!</center>
+
+                    <div class="page-break" style="margin: 30px 0; border-top: 2px solid black;"></div>
+
+                    <center>
+                        <h2 style="margin:0; border: 2px solid black; padding: 3px; font-size: 18px;">ORDER DAPUR</h2>
+                        <p style="font-size:12px; margin-top: 5px;">Nota #${data.id} | ${date}</p>
+                    </center>
+                    <hr style="border-top: 1px dashed black; margin: 8px 0;">
+                    ${dapurItemsHtml}
+                    <hr style="border-top: 1px dashed black; margin: 8px 0;">
+                    <center><strong style="font-size: 12px;">--- SEGERA PROSES ---</strong></center>
+                </div>
+            `;
+
+            // Kasih jeda 500ms supaya browser selesai gambar struknya baru buka jendela print
+            setTimeout(() => {
+                window.print();
+                printArea.style.display = 'none'; // Sembunyikan lagi setelah print
+            }, 500);
+        }
+
         function deleteTransaction(id) {
             Swal.fire({
                 title: 'Hapus Transaksi?',
-                text: "Data akan dihapus dan STOK AKAN DIKEMBALIKAN!",
+                text: "Data akan dihapus permanen!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Ya, Hapus & Refund!'
+                confirmButtonText: 'Ya, Hapus!'
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(`/transaction/${id}`, {
@@ -99,16 +178,9 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.status === 'success') {
-                            Swal.fire('Terhapus!', data.message, 'success').then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire('Error!', data.message, 'error');
+                            Swal.fire('Terhapus!', data.message, 'success').then(() => location.reload());
                         }
                     })
-                    .catch(err => {
-                        Swal.fire('Error!', 'Terjadi kesalahan sistem', 'error');
-                    });
                 }
             })
         }

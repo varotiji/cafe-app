@@ -6,18 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
-        // Tabel Kategori (Makanan, Minuman, dsb)
+        // 1. Tabel Kategori (Dibuat paling atas agar bisa jadi relasi)
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->timestamps();
         });
 
-        // Tabel Produk/Menu
+        // 2. Tabel Produk
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
             $table->string('name');
+            $table->string('image')->nullable(); // Hanya satu baris di sini
+            $table->text('description')->nullable(); // Kolom deskripsi
             $table->integer('price');
             $table->integer('stock')->default(0);
             $table->timestamps();

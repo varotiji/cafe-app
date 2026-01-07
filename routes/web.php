@@ -2,37 +2,41 @@
 
 use App\Http\Controllers\CafeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MenuController;
 
-// 1. Halaman Utama (Langsung lempar ke login kalau belum masuk)
+// 1. Halaman Utama
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// 2. Route yang butuh Login (Auth)
+// 2. Route yang butuh Login (Untuk Admin/Kasir)
 Route::middleware('auth')->group(function () {
-
-    // Halaman Kasir / POS
     Route::get('/pos', [CafeController::class, 'index'])->name('pos');
-
-    // Halaman History (Cukup tulis satu kali di sini)
     Route::get('/history', [CafeController::class, 'history'])->name('history');
 
-    // Proses Bayar
-    Route::post('/checkout', [CafeController::class, 'checkout'])->name('checkout');
+    // Ini checkout untuk Kasir (Bayar Tunai)
+    Route::post('/checkout-pos', [CafeController::class, 'checkout'])->name('checkout.pos');
 
-    // Proses Hapus Transaksi (Dipanggil oleh JavaScript di halaman history)
     Route::delete('/transaction/{id}', [CafeController::class, 'destroy'])->name('transaction.destroy');
-
-    // Halaman Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// 3. Route khusus Admin (Dashboard)
+// 3. Route khusus Admin
 Route::get('/dashboard', [CafeController::class, 'dashboard'])
     ->middleware(['auth', 'can:admin-only'])
     ->name('dashboard');
+
+// 4. Route untuk Pelanggan (Tanpa Login / Scan QR)
+Route::get('/menu-customer', [CafeController::class, 'index'])->name('customer.menu');
+
+// Route untuk QRIS
+Route::post('/checkout-customer', [OrderController::class, 'checkout'])->name('checkout.customer');
+
+// Route untuk Cash
+Route::post('/checkout-cash', [OrderController::class, 'checkoutCash'])->name('checkout.cash');
+
+Route::resource('menus', MenuController::class)->middleware(['auth', 'verified']);
 
 require __DIR__.'/auth.php';
