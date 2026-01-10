@@ -1,96 +1,82 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers; // Alamat Folder Utama
 
-use Illuminate\Http\Request;
 use App\Models\Menu;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MenuController extends Controller
 {
-    // 1. Tampilkan Daftar Menu
-    public function index()
+    public function index(Request $request)
     {
-        $menus = Menu::all();
+        $query = Menu::withTrashed();
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        $menus = $query->latest()->get();
         return view('menus.index', compact('menus'));
     }
 
-    // 2. Form Tambah Menu
     public function create()
     {
         return view('menus.create');
     }
 
-    // 3. Proses Simpan Menu Baru
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required',
-            'price' => 'required|numeric',
-            'category' => 'required',
-            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'name'     => 'required|string|max:255',
+            'price'    => 'required|numeric',
+            'stock'    => 'required|numeric',
+            'category' => 'required|string',
+            'image'    => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        $data = $request->all();
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/products', $filename);
+            $data['image'] = $request->file('image')->store('menus', 'public');
         }
 
-        Menu::create([
-            'name' => $request->name,
-            'description' => 'Menu baru',
-            'price' => $request->price,
-            'category' => $request->category,
-            'image' => $filename,
-            'is_available' => 1,
-        ]);
-
+        Menu::create($data);
         return redirect()->route('menus.index')->with('success', 'Menu berhasil ditambah!');
     }
 
-    // 4. Form Edit Menu
-    public function edit($id)
+    public function edit(Menu $menu)
     {
-        $menu = Menu::findOrFail($id);
         return view('menus.edit', compact('menu'));
     }
 
-    // 5. Proses Simpan Perubahan (Update)
-    public function update(Request $request, $id)
+    public function update(Request $request, Menu $menu)
     {
-        $menu = Menu::findOrFail($id);
-
+        $data = $request->all();
         if ($request->hasFile('image')) {
-            // Hapus foto lama
-            if ($menu->image && file_exists(storage_path('app/public/products/' . $menu->image))) {
-                unlink(storage_path('app/public/products/' . $menu->image));
+            if ($menu->image) {
+                Storage::disk('public')->delete($menu->image);
             }
-            // Simpan foto baru
-            $file = $request->file('image');
-            $filename = time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/products', $filename);
-            $menu->image = $filename;
+            $data['image'] = $request->file('image')->store('menus', 'public');
         }
 
-        $menu->update([
-            'name' => $request->name,
-            'price' => $request->price,
-            'category' => $request->category,
-        ]);
-
+        $menu->update($data);
         return redirect()->route('menus.index')->with('success', 'Menu berhasil diupdate!');
     }
 
-    // 6. Proses Hapus Menu
-    public function destroy($id)
+    public function destroy(Menu $menu)
     {
-        $menu = Menu::findOrFail($id);
+        $menu->delete(); // Soft Delete
+        return redirect()->route('menus.index')->with('success', 'Menu dinonaktifkan!');
+    }
 
-        if ($menu->image && file_exists(storage_path('app/public/products/' . $menu->image))) {
-            unlink(storage_path('app/public/products/' . $menu->image));
-        }
-
-        $menu->delete();
-        return redirect()->route('menus.index')->with('success', 'Menu berhasil dihapus!');
+    public function restore($id)
+    {
+        $menu = Menu::withTrashed()->findOrFail($id);
+        $menu->restore();
+        return redirect()->route('menus.index')->with('success', 'Menu diaktifkan kembali!');
     }
 }

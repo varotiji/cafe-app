@@ -1,42 +1,49 @@
 <?php
 
-use App\Http\Controllers\CafeController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\OrderController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\CustomerMenuController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\DashboardController;
+use Illuminate\Support\Facades\Route;
 
-// 1. Halaman Utama
+// 1. Halaman Utama (Langsung ke Login)
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// 2. Route yang butuh Login (Untuk Admin/Kasir)
-Route::middleware('auth')->group(function () {
-    Route::get('/pos', [CafeController::class, 'index'])->name('pos');
-    Route::get('/history', [CafeController::class, 'history'])->name('history');
-
-    // Ini checkout untuk Kasir (Bayar Tunai)
-    Route::post('/checkout-pos', [CafeController::class, 'checkout'])->name('checkout.pos');
-
-    Route::delete('/transaction/{id}', [CafeController::class, 'destroy'])->name('transaction.destroy');
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-});
-
-// 3. Route khusus Admin
-Route::get('/dashboard', [CafeController::class, 'dashboard'])
-    ->middleware(['auth', 'can:admin-only'])
-    ->name('dashboard');
-
-// 4. Route untuk Pelanggan (Tanpa Login / Scan QR)
-Route::get('/menu-customer', [CafeController::class, 'index'])->name('customer.menu');
-
-// Route untuk QRIS
+// 2. Route Pelanggan (Tanpa Login / Scan QR)
+Route::get('/menu', [CustomerMenuController::class, 'index'])->name('customer.menu');
 Route::post('/checkout-customer', [OrderController::class, 'checkout'])->name('checkout.customer');
-
-// Route untuk Cash
 Route::post('/checkout-cash', [OrderController::class, 'checkoutCash'])->name('checkout.cash');
 
-Route::resource('menus', MenuController::class)->middleware(['auth', 'verified']);
+// 3. SEMUA Route yang butuh Login (Admin/Kasir)
+Route::middleware(['auth', 'verified'])->group(function () {
+
+    // DASHBOARD (Grafik & Statistik)
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Halaman Kasir / POS
+    Route::get('/pos', [TransactionController::class, 'index'])->name('pos');
+    Route::post('/transaksi', [TransactionController::class, 'store'])->name('transaksi.store');
+    Route::get('/transaksi/{id}/print', [TransactionController::class, 'print'])->name('transaksi.print');
+
+    // Riwayat & Profile
+    Route::get('/history', [TransactionController::class, 'history'])->name('history');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Manajemen Menu (CRUD)
+    Route::resource('menus', MenuController::class);
+    // Route khusus Restore (Ditaruh di sini agar aman)
+    Route::patch('/menus/{id}/restore', [MenuController::class, 'restore'])->name('menus.restore');
+
+    // Khusus Admin Only
+    Route::middleware('can:admin-only')->group(function () {
+        Route::delete('/transaction/{id}', [TransactionController::class, 'destroy'])->name('transaction.destroy');
+    });
+});
 
 require __DIR__.'/auth.php';

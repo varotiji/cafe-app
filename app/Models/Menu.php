@@ -2,23 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; // 1. Import ini
 
 class Menu extends Model
 {
-    use HasFactory;
+    use SoftDeletes; // 2. Gunakan ini
 
-    /**
-     * fillable: daftar kolom yang diizinkan untuk diisi secara massal.
-     * Ini penting supaya Poin 1 (Gambar) dan Poin 8 (Deskripsi) bisa masuk ke database.
-     */
-    protected $fillable = [
-        'name',
-        'description',
-        'price',
-        'image',
-        'category',
-        'is_available'
-    ];
+    protected $fillable = ['name', 'description', 'price', 'image', 'category', 'stock', 'is_available'];
 }

@@ -7,14 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     // Izinkan kolom-kolom berikut diisi
-    protected $fillable = [
-    'category_id',
-    'name',
-    'image',        // Tambahkan ini
-    'description',  // Tambahkan ini
-    'price',
-    'stock'
-];
+  protected $fillable = ['name', 'price', 'stock', 'image', 'category'];
+
     // Relasi ke Category (Satu produk milik satu kategori)
     public function category()
     {

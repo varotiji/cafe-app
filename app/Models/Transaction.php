@@ -2,24 +2,29 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    use HasFactory;
+    protected $fillable = [
+        'user_id',
+        'total_price',
+        'items',
+        'status',
+        'invoice_number',
+        'cash_received',
+        'cash_change',
+        'order_type',      // <--- TAMBAHKAN INI
+        'payment_method'   // <--- TAMBAHKAN INI
+    ];
 
-    // Menentukan kolom mana saja yang boleh diisi (Mass Assignment)
- protected $fillable = [
-    'user_id', 'total_price', 'snap_token', 'status', 'payment_method', 'items'
-];
-    /**
-     * Casting kolom 'items' agar otomatis menjadi Array.
-     * Saat disimpan ke MySQL, Laravel akan mengubahnya jadi JSON.
-     * Saat dibaca dari MySQL, Laravel akan mengubahnya jadi Array PHP.
-     */
-   // PENTING: Supaya database gak bingung cara simpan list makanan
-protected $casts = [
-    'items' => 'array',
-];
+    public function details()
+    {
+        return $this->hasMany(TransactionDetail::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
