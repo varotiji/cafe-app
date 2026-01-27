@@ -9,11 +9,15 @@ class TransactionDetail extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['transaction_id', 'menu_id', 'quantity', 'price'];
+    protected $fillable = [
+        'transaction_id', // Field ini wajib ada di fillable
+        'menu_id',
+        'price',
+        'quantity',
+        'subtotal'
+    ];
 
-    // TAMBAHKAN INI: Supaya Detail Transaksi kenal sama tabel Menu
-    public function menu()
-    {
-        return $this->belongsTo(Menu::class, 'menu_id');
+    public function menu() {
+        return $this->belongsTo(Menu::class);
     }
 }

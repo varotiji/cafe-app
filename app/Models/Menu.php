@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes; // 1. Import ini
+use Illuminate\Database\Eloquent\SoftDeletes; // Pastikan ini ada
 
 class Menu extends Model
 {
-    use SoftDeletes; // 2. Gunakan ini
+    use HasFactory, SoftDeletes; // Gunakan trait ini
 
-    protected $fillable = ['name', 'description', 'price', 'image', 'category', 'stock', 'is_available'];
+    protected $fillable = ['name', 'category', 'price', 'stock', 'image'];
 }

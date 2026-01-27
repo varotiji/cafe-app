@@ -1,48 +1,52 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\MenuController;
-use App\Http\Controllers\CustomerMenuController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\{ProfileController, MenuController, CustomerMenuController, TransactionController, OrderController, DashboardController};
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\WebhookController;
 
-// 1. Halaman Utama (Langsung ke Login)
+// 1. REDIRECT UTAMA
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// 2. Route Pelanggan (Tanpa Login / Scan QR)
+// Webhook Midtrans
+Route::post('/webhook/midtrans', [WebhookController::class, 'handle']);
+
+// 2. ROUTE PUBLIK
+Route::get('/menu-digital', [TransactionController::class, 'publicMenu'])->name('menu.digital');
 Route::get('/menu', [CustomerMenuController::class, 'index'])->name('customer.menu');
 Route::post('/checkout-customer', [OrderController::class, 'checkout'])->name('checkout.customer');
 Route::post('/checkout-cash', [OrderController::class, 'checkoutCash'])->name('checkout.cash');
 
-// 3. SEMUA Route yang butuh Login (Admin/Kasir)
+// 3. ROUTE PRIVAT (Wajib Login)
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // DASHBOARD (Grafik & Statistik)
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Halaman Kasir / POS
     Route::get('/pos', [TransactionController::class, 'index'])->name('pos');
     Route::post('/transaksi', [TransactionController::class, 'store'])->name('transaksi.store');
-    Route::get('/transaksi/{id}/print', [TransactionController::class, 'print'])->name('transaksi.print');
 
-    // Riwayat & Profile
+    // NAMA ROUTE DISAMAKAN DENGAN BLADE (transactions.print)
+    Route::get('/transaksi/{id}/print', [TransactionController::class, 'print'])->name('transactions.print');
     Route::get('/history', [TransactionController::class, 'history'])->name('history');
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Manajemen Menu (CRUD)
-    Route::resource('menus', MenuController::class);
-    // Route khusus Restore (Ditaruh di sini agar aman)
-    Route::patch('/menus/{id}/restore', [MenuController::class, 'restore'])->name('menus.restore');
+    Route::controller(ProfileController::class)->group(function () {
+        Route::get('/profile', 'edit')->name('profile.edit');
+        Route::patch('/profile', 'update')->name('profile.update');
+        Route::delete('/profile', 'destroy')->name('profile.destroy');
+    });
 
-    // Khusus Admin Only
-    Route::middleware('can:admin-only')->group(function () {
-        Route::delete('/transaction/{id}', [TransactionController::class, 'destroy'])->name('transaction.destroy');
+    // 4. KHUSUS ADMIN (Middleware: admin)
+    Route::middleware(['admin'])->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::controller(MenuController::class)->group(function () {
+            Route::get('/menus', 'index')->name('menus.index');
+            Route::get('/menus/create', 'create')->name('menus.create');
+            Route::post('/menus', 'store')->name('menus.store');
+            Route::get('/menus/{id}/edit', 'edit')->name('menus.edit');
+            Route::put('/menus/{id}', 'update')->name('menus.update');
+            Route::delete('/menus/{id}', 'destroy')->name('menus.destroy');
+            Route::post('/menus/{id}/restore', 'restore')->name('menus.restore');
+        });
     });
 });
 

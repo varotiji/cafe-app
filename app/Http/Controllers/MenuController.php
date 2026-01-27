@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers; // Alamat Folder Utama
+namespace App\Http\Controllers;
 
 use App\Models\Menu;
 use Illuminate\Http\Request;
@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Storage;
 
 class MenuController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = Menu::withTrashed();
+    // Tampilkan Menu yang AKTIF saja
+    public function index(Request $request) {
+        $query = Menu::query(); // Laravel otomatis filter yang deleted_at-nya NULL
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -24,19 +24,17 @@ class MenuController extends Controller
         return view('menus.index', compact('menus'));
     }
 
-    public function create()
-    {
+    public function create() {
         return view('menus.create');
     }
 
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         $request->validate([
             'name'     => 'required|string|max:255',
-            'price'    => 'required|numeric',
-            'stock'    => 'required|numeric',
-            'category' => 'required|string',
-            'image'    => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'price'    => 'required|numeric|min:0',
+            'stock'    => 'required|integer|min:0',
+            'category' => 'required|in:Makanan,Minuman,Snack',
+            'image'    => 'nullable|image|mimes:jpg,png,jpeg|max:5120'
         ]);
 
         $data = $request->all();
@@ -45,38 +43,45 @@ class MenuController extends Controller
         }
 
         Menu::create($data);
-        return redirect()->route('menus.index')->with('success', 'Menu berhasil ditambah!');
+        return redirect()->route('menus.index')->with('success', 'Menu Berhasil Ditambah!');
     }
 
-    public function edit(Menu $menu)
-    {
+    public function edit($id) {
+        $menu = Menu::findOrFail($id); // Hanya bisa edit menu yang belum dihapus
         return view('menus.edit', compact('menu'));
     }
 
-    public function update(Request $request, Menu $menu)
-    {
-        $data = $request->all();
+    public function update(Request $request, $id) {
+        $menu = Menu::findOrFail($id);
+
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'price'    => 'required|numeric|min:0',
+            'stock'    => 'required|integer|min:0',
+            'category' => 'required|in:Makanan,Minuman,Snack',
+            'image'    => 'nullable|image|mimes:jpg,png,jpeg|max:5120'
+        ]);
+
+        $menu->name = $request->name;
+        $menu->category = $request->category;
+        $menu->price = $request->price;
+        $menu->stock = $request->stock;
+
         if ($request->hasFile('image')) {
-            if ($menu->image) {
+            if ($menu->image && Storage::disk('public')->exists($menu->image)) {
                 Storage::disk('public')->delete($menu->image);
             }
-            $data['image'] = $request->file('image')->store('menus', 'public');
+            $menu->image = $request->file('image')->store('menus', 'public');
         }
 
-        $menu->update($data);
-        return redirect()->route('menus.index')->with('success', 'Menu berhasil diupdate!');
+        $menu->save();
+        return redirect()->route('menus.index')->with('success', 'Menu Berhasil Diperbarui!');
     }
 
-    public function destroy(Menu $menu)
-    {
-        $menu->delete(); // Soft Delete
-        return redirect()->route('menus.index')->with('success', 'Menu dinonaktifkan!');
-    }
+    public function destroy($id) {
+        $menu = Menu::findOrFail($id);
+        $menu->delete(); // Soft Delete: Isi kolom deleted_at di DB, data hilang dari web
 
-    public function restore($id)
-    {
-        $menu = Menu::withTrashed()->findOrFail($id);
-        $menu->restore();
-        return redirect()->route('menus.index')->with('success', 'Menu diaktifkan kembali!');
+        return redirect()->route('menus.index')->with('success', 'Menu berhasil dihapus!');
     }
 }

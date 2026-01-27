@@ -7,10 +7,9 @@ use Illuminate\Http\Request;
 
 class CustomerMenuController extends Controller
 {
-    public function index()
-    {
-        // Ambil semua menu yang ada di database
-        $menus = Menu::all();
-        return view('customer.index', compact('menus'));
-    }
+    public function index() {
+    $menus = \App\Models\Menu::where('stock', '>', 0)->get();
+    // Arahkan ke view yang kita perbaiki gambarnya
+    return view('menus.public', compact('menus'));
+}
 }

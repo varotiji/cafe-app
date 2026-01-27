@@ -2,60 +2,70 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Menu;
 use App\Models\Transaction;
+use App\Models\Menu;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // 1. Ambil data Omzet 7 hari terakhir untuk Grafik
-        $salesData = Transaction::select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(total_price) as total')
-            )
-            ->where('created_at', '>=', now()->subDays(6))
-            ->groupBy('date')
-            ->orderBy('date', 'ASC')
-            ->get();
+        $today = Carbon::today();
 
-        $labels = $salesData->pluck('date');
-        $totals = $salesData->pluck('total');
-
-        // 2. Statistik Utama
+        // 1. Hitung Ringkasan Statistik
         $totalMenu = Menu::count();
-        $totalTransaksi = Transaction::count();
-        $totalPendapatan = Transaction::sum('total_price') ?? 0;
-        $pendapatanHariIni = Transaction::whereDate('created_at', today())->sum('total_price') ?? 0;
-        $transaksiHariIni = Transaction::whereDate('created_at', today())->count();
+        $transaksiHariIni = Transaction::whereDate('created_at', $today)->count();
+        $pendapatanHariIni = Transaction::whereDate('created_at', $today)->sum('total_price');
 
-        // 3. Pendapatan Per Shift (Dihitung berdasarkan LABEL SHIFT di profil Kasir)
-        // Kita hubungkan (join) tabel transaksi dengan tabel users
-        $shiftPagi = Transaction::whereHas('user', function($query) {
-            $query->where('shift', 'pagi');
-        })->whereDate('created_at', today())->sum('total_price') ?? 0;
+        // 2. Data Grafik (7 Hari Terakhir)
+        $salesData = Transaction::select(
+            DB::raw('DATE(created_at) as date'),
+            DB::raw('SUM(total_price) as total')
+        )
+        ->where('created_at', '>=', Carbon::now()->subDays(7))
+        ->groupBy('date')
+        ->orderBy('date', 'ASC')
+        ->get();
 
-        $shiftSiang = Transaction::whereHas('user', function($query) {
-            $query->where('shift', 'sore'); // Sore/Siang disamakan sesuai label di DB kamu
-        })->whereDate('created_at', today())->sum('total_price') ?? 0;
+        $labels = $salesData->pluck('date')->map(fn($d) => Carbon::parse($d)->format('d M'))->toArray();
+        $totals = $salesData->pluck('total')->toArray();
 
-        $shiftMalam = Transaction::whereHas('user', function($query) {
-            $query->where('shift', 'malam');
-        })->whereDate('created_at', today())->sum('total_price') ?? 0;
+        // 3. Menu Terlaris (Top 5)
+        // Jika kamu belum punya tabel transaction_details, ini akan mengambil data dummy agar tidak error
+        $bestSeller = DB::table('transaction_details')
+            ->join('menus', 'transaction_details.menu_id', '=', 'menus.id')
+            ->select('menus.name', DB::raw('SUM(transaction_details.quantity) as total_qty'))
+            ->groupBy('menus.name')
+            ->orderBy('total_qty', 'DESC')
+            ->take(5)
+            ->pluck('total_qty', 'name')
+            ->toArray();
 
-        // 4. Best Seller (Dummy)
-        $bestSeller = [
-            'Es Kopi Susu Aren' => 45,
-            'Matcha Latte' => 38,
-            'Teh Manis' => 25
-        ];
+        // 4. Hitung Pendapatan Berdasarkan Shift (Hari Ini)
+        $shiftPagi = Transaction::whereDate('created_at', $today)
+            ->whereTime('created_at', '>=', '06:00:00')
+            ->whereTime('created_at', '<', '15:00:00')
+            ->sum('total_price');
+
+        $shiftSiang = Transaction::whereDate('created_at', $today)
+            ->whereTime('created_at', '>=', '15:00:00')
+            ->whereTime('created_at', '<', '19:00:00')
+            ->sum('total_price');
+
+        $shiftMalam = Transaction::whereDate('created_at', $today)
+            ->where(function($query) {
+                $query->whereTime('created_at', '>=', '19:00:00')
+                      ->orWhereTime('created_at', '<', '05:00:00');
+            })
+            ->sum('total_price');
 
         return view('dashboard', compact(
-            'totalMenu', 'totalTransaksi', 'totalPendapatan', 'pendapatanHariIni',
-            'transaksiHariIni', 'shiftPagi', 'shiftSiang', 'shiftMalam',
-            'labels', 'totals', 'bestSeller'
+            'totalMenu', 'transaksiHariIni', 'pendapatanHariIni',
+            'labels', 'totals', 'bestSeller',
+            'shiftPagi', 'shiftSiang', 'shiftMalam'
         ));
     }
 }

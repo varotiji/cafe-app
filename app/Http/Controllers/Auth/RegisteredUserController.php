@@ -29,27 +29,24 @@ class RegisteredUserController extends Controller
      */
    public function store(Request $request): RedirectResponse
 {
-    // 1. Validasi input (tambahin shift di sini.
     $request->validate([
         'name' => ['required', 'string', 'max:255'],
         'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        'password' => ['required', 'confirmed', 'digits:6'], // Pastikan PIN 6 angka
         'shift' => ['required', 'string'],
     ]);
 
     $user = User::create([
         'name' => $request->name,
         'email' => $request->email,
-        'password' => Hash::make($request->password),
+        'password' => Hash::make($request->password), // WAJIB PAKAI Hash::make agar terbaca Bcrypt
         'shift' => $request->shift,
-        'role' => 'admin', // TAMBAHKAN INI: Supaya langsung bisa masuk dashboard
     ]);
 
     event(new Registered($user));
 
     Auth::login($user);
 
-    // Pastikan ini mengarah ke /dashboard
     return redirect(route('dashboard', absolute: false));
 }
 }

@@ -15,20 +15,20 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
-   protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'role',  // Tambahkan ini
-    'shift', // Tambahkan ini
-];
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',  // Hak akses (Admin/Kasir)
+        'shift', // Shift Kerja (Pagi/Siang/Malam)
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -44,7 +44,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password' => 'hashed', // Ini yang memastikan PIN/Password otomatis di-encrypt
         ];
     }
 }

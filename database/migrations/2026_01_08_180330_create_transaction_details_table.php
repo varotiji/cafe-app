@@ -6,15 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-   public function up(): void
-{
-    Schema::create('transaction_details', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('transaction_id')->constrained()->onDelete('cascade');
-        $table->foreignId('menu_id')->constrained();
-        $table->integer('quantity');
-        $table->decimal('price', 15, 2);
-        $table->timestamps();
-    });
-}
+    public function up(): void
+    {
+        Schema::create('transaction_details', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('transaction_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('menu_id')->constrained();
+            $table->integer('quantity');
+            $table->decimal('price', 15, 2);
+            $table->integer('subtotal'); // ✅ FIX
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('transaction_details');
+    }
 };

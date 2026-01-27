@@ -46,6 +46,14 @@
     <div class="fixed bottom-0 w-full bg-white border-t rounded-t-3xl p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-50">
         <div class="flex justify-between items-center mb-4">
             <span class="text-gray-400 font-medium text-sm uppercase tracking-wider">Total Pembayaran</span>
+
+<div class="mb-3">
+    <label for="note" class="form-label small fw-bold text-muted">CATATAN PESANAN (OPSIONAL)</label>
+    <textarea name="note" id="note" class="form-control border-0 bg-light" rows="2"
+              placeholder="Contoh: Kurangi gula, bungkus terpisah, dll..."
+              style="border-radius: 12px; resize: none;"></textarea>
+</div>
+
             <span id="total-display" class="text-2xl font-black text-orange-600 tracking-tight">Rp 0</span>
         </div>
 

@@ -2,95 +2,129 @@
 
 namespace App\Http\Controllers;
 
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Models\Menu;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class TransactionController extends Controller
 {
+    public function __construct()
+    {
+        Config::$serverKey = env('MIDTRANS_SERVER_KEY');
+        Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+        Config::$isSanitized = env('MIDTRANS_IS_SANITIZED', true);
+        Config::$is3ds = env('MIDTRANS_IS_3DS', true);
+    }
+
     public function index()
     {
-        // Menampilkan menu yang stoknya lebih dari 0 saja untuk POS
         $menus = Menu::where('stock', '>', 0)->get();
         return view('transactions.index', compact('menus'));
     }
 
     public function store(Request $request)
     {
-        // 1. Validasi Input
         $request->validate([
             'total_price'    => 'required|numeric',
             'items'          => 'required|array',
-            'order_type'     => 'required|string', // Dine In, Take Away, dll
-            'payment_method' => 'required|string', // Tunai, QRIS, dll
+            'order_type'     => 'required|string',
+            'payment_method' => 'required|string',
         ]);
 
         try {
             return DB::transaction(function () use ($request) {
-                // 2. Simpan Transaksi Utama ke Tabel Transactions
+                $subtotal = (int)$request->total_price;
+                $pajak = round($subtotal * 0.11);
+                $total_akhir = $subtotal + $pajak;
+
                 $transaction = Transaction::create([
                     'user_id'        => Auth::id() ?? 1,
-                    'total_price'    => $request->total_price,
-                    'order_type'     => $request->order_type,     // Kolom baru
-                    'payment_method' => $request->payment_method, // Kolom baru
+                    'total_price'    => $total_akhir,
+                    'order_type'     => $request->order_type . ' (Meja: ' . ($request->table_number ?? '-') . ')',
+                    'payment_method' => $request->payment_method,
+                    'note'           => $request->note,
                     'items'          => json_encode($request->items),
-                    'status'         => 'success',
+                    'status'         => ($request->payment_method == 'Midtrans') ? 'pending' : 'success',
                 ]);
 
-                // 3. Simpan Detail ke Tabel TransactionDetail & Potong Stok
                 foreach ($request->items as $item) {
-                    // Cek ID Menu (Pastikan frontend mengirim 'menu_id' atau 'id')
-                    $menuId = $item['menu_id'] ?? $item['id'];
-
                     TransactionDetail::create([
                         'transaction_id' => $transaction->id,
-                        'menu_id'        => $menuId,
-                        'quantity'       => $item['quantity'] ?? 1,
+                        'menu_id'        => $item['id'],
                         'price'          => $item['price'],
+                        'quantity'       => $item['quantity'],
+                        'subtotal'       => $item['price'] * $item['quantity'],
                     ]);
-
-                    // Potong Stok di Tabel Menus
-                    $menu = Menu::find($menuId);
-                    if ($menu) {
-                        $menu->decrement('stock', $item['quantity'] ?? 1);
-                    }
+                    $menu = Menu::find($item['id']);
+                    if ($menu) { $menu->decrement('stock', $item['quantity']); }
                 }
 
-                return response()->json([
-                    'message' => 'Transaksi berhasil!',
-                    'transaction_id' => $transaction->id
-                ], 200);
+                $snapToken = null;
+                if ($request->payment_method == 'Midtrans') {
+                    $params = [
+                        'transaction_details' => [
+                            'order_id' => 'CAFE-' . $transaction->id . '-' . time(),
+                            'gross_amount' => (int)$total_akhir,
+                        ],
+                        'item_details' => [
+                            ['id' => 'SUB', 'price' => (int)$subtotal, 'quantity' => 1, 'name' => 'Subtotal'],
+                            ['id' => 'TAX', 'price' => (int)$pajak, 'quantity' => 1, 'name' => 'PPN 11%'],
+                        ],
+                    ];
+                    $snapToken = Snap::getSnapToken($params);
+                    $transaction->update(['snap_token' => $snapToken]);
+                }
+
+                return response()->json(['status' => 'success', 'snap_token' => $snapToken, 'transaction_id' => $transaction->id]);
             });
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Gagal: ' . $e->getMessage()], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
     public function history()
     {
-        // Mengambil riwayat transaksi terbaru
-        $transactions = Transaction::latest()->get();
-        return view('history', compact('transactions'));
+        $transactions = Transaction::with(['user', 'details.menu'])
+                        ->latest()
+                        ->paginate(10);
+        return view('transactions.history', compact('transactions'));
     }
 
     public function print($id)
     {
-        // Mengambil data transaksi beserta detail menu untuk struk
-        $transaction = Transaction::with('details.menu')->findOrFail($id);
-        return view('transactions.print', compact('transaction'));
+        $transaction = Transaction::with(['details.menu', 'user'])->findOrFail($id);
+
+        $qrContent = ($transaction->status == 'pending')
+            ? "https://app.sandbox.midtrans.com/snap/v2/vtweb/" . $transaction->snap_token
+            : "LUNAS-" . $transaction->id;
+
+        $qrCode = QrCode::size(120)->generate($qrContent);
+        $statusLabel = ($transaction->status == 'pending') ? "SCAN UNTUK BAYAR" : "LUNAS";
+
+        return view('transactions.print', compact('transaction', 'qrCode', 'statusLabel'));
     }
 
-    public function destroy($id)
+    public function dashboard()
     {
-        try {
-            $transaction = Transaction::findOrFail($id);
-            $transaction->delete();
-            return response()->json(['status' => 'success', 'message' => 'Transaksi Berhasil Dihapus!']);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        $today = Carbon::today();
+        $totalMenu = Menu::count();
+        $transaksiHariIni = Transaction::whereDate('created_at', $today)->count();
+        $pendapatanHariIni = Transaction::whereDate('created_at', $today)->sum('total_price') ?? 0;
+
+        $labels = []; $totals = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::today()->subDays($i);
+            $labels[] = $date->format('d M');
+            $totals[] = Transaction::whereDate('created_at', $date)->sum('total_price') ?? 0;
         }
+        return view('dashboard', compact('totalMenu', 'transaksiHariIni', 'pendapatanHariIni', 'labels', 'totals'));
     }
 }

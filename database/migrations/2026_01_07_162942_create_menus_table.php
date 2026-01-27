@@ -6,26 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-   public function up(): void
-{
-    Schema::create('menus', function (Blueprint $table) {
-        $table->id();
-        $table->string('name');
-        $table->text('description')->nullable(); // Poin 8 (Deskripsi)
-        $table->integer('price');
-        $table->string('image')->nullable(); // Poin 1 (Gambar)
-        $table->string('category');
-        $table->boolean('is_available')->default(true);
-        $table->timestamps();
-    });
-}
+    public function up(): void
+    {
+        Schema::create('menus', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->integer('price');
+            $table->string('image')->nullable();
+            $table->string('category');
+            $table->boolean('is_available')->default(true);
+            $table->timestamps();
+            $table->softDeletes(); // ✅ soft delete
+        });
+    }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('menus');

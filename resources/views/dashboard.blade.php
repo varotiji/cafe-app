@@ -1,84 +1,124 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('📊 Dashboard Analisis Kafe') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-blue-500">
-                    <p class="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Menu</p>
-                    <p class="text-3xl font-black text-gray-800">{{ $totalMenu }}</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-green-500">
-                    <p class="text-sm font-bold text-gray-500 uppercase tracking-wider">Transaksi Hari Ini</p>
-                    <p class="text-3xl font-black text-gray-800">{{ $transaksiHariIni }}</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-orange-500">
-                    <p class="text-sm font-bold text-gray-500 uppercase tracking-wider">Omzet Hari Ini</p>
-                    <p class="text-3xl font-black text-gray-800">Rp {{ number_format($pendapatanHariIni, 0, ',', '.') }}</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="font-bold text-gray-700 mb-4">📈 Tren Penjualan 7 Hari Terakhir</h3>
-                    <canvas id="myChart" height="150"></canvas>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-orange-500">
-                    <h3 class="font-bold text-gray-700 mb-4 italic underline">🔥 5 Menu Terlaris</h3>
-                    <div class="space-y-3">
-                        @foreach($bestSeller as $name => $qty)
-                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                            <span class="text-sm font-bold text-gray-600">{{ $name }}</span>
-                            <span class="bg-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black">
-                                {{ $qty }} Sold
-                            </span>
-                        </div>
-                        @endforeach
+    <div class="container-fluid p-4">
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; background: linear-gradient(45deg, #1e293b, #334155);">
+            <div class="card-body p-4 text-white">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h3 class="fw-bold mb-1 text-white">Halo, {{ Auth::user()->name }}! 👋</h3>
+                        <p class="text-white-50 mb-0">
+                            Role: <span class="badge bg-orange px-3" style="background-color: #ea580c;">{{ strtoupper(Auth::user()->role) }}</span> | Shift: <b>{{ Auth::user()->shift }}</b>
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <h2 class="fw-bold mb-0 text-white" id="live-clock">00:00:00</h2>
+                        <small class="text-white-50">{{ date('d F Y') }}</small>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <h3 class="text-lg font-bold text-gray-700 mb-4 px-2">🕒 Pendapatan Per Shift</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                    <p class="text-xs font-bold text-orange-600 uppercase">Pagi (06:00 - 15:00)</p>
-                    <p class="text-xl font-bold text-gray-800">Rp {{ number_format($shiftPagi, 0, ',', '.') }}</p>
-                </div>
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <p class="text-xs font-bold text-blue-600 uppercase">Siang (15:00 - 19:00)</p>
-                    <p class="text-xl font-bold text-gray-800">Rp {{ number_format($shiftSiang, 0, ',', '.') }}</p>
-                </div>
-                <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-                    <p class="text-xs font-bold text-indigo-600 uppercase">Malam (19:00 - 05:00)</p>
-                    <p class="text-xl font-bold text-gray-800">Rp {{ number_format($shiftMalam, 0, ',', '.') }}</p>
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 p-4 shadow-sm h-100 card-hover" style="border-radius: 20px; border-left: 5px solid #0ea5e9 !important;">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 text-dark">Total Menu</p>
+                    <h2 class="fw-extrabold mb-0 text-dark">{{ $totalMenu }}</h2>
                 </div>
             </div>
+            <div class="col-md-4">
+                <div class="card border-0 p-4 shadow-sm h-100 card-hover" style="border-radius: 20px; border-left: 5px solid #10b981 !important;">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 text-dark">Transaksi Hari Ini</p>
+                    <h2 class="fw-extrabold mb-0 text-dark">{{ $transaksiHariIni }}</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 p-4 shadow-sm h-100 card-hover" style="border-radius: 20px; border-left: 5px solid #ea580c !important;">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 text-dark">Omzet Hari Ini</p>
+                    <h2 class="fw-extrabold mb-0" style="color: #ea580c;">Rp {{ number_format($pendapatanHariIni, 0, ',', '.') }}</h2>
+                </div>
+            </div>
+        </div>
 
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="card border-0 p-4 shadow-sm" style="border-radius: 20px;">
+                    <h6 class="fw-bold mb-4">📈 Tren Penjualan (7 Hari Terakhir)</h6>
+                    <div style="height: 320px;">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card border-0 p-4 shadow-sm h-100" style="border-radius: 20px;">
+                    <h6 class="fw-bold mb-4">🔥 5 Menu Terlaris</h6>
+                    @forelse($bestSeller as $name => $qty)
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-4" style="background: #f8fafc;">
+                        <span class="small fw-bold text-secondary">{{ strtoupper($name) }}</span>
+                        <span class="badge rounded-pill px-3 py-2" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5;">
+                            {{ $qty }} TERJUAL
+                        </span>
+                    </div>
+                    @empty
+                    <p class="text-muted text-center py-4">Belum ada data.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12"><h6 class="fw-bold mb-2 text-dark">🕒 Rekap Pendapatan per Shift (Hari Ini)</h6></div>
+            @php
+                $recapShifts = [
+                    ['label' => 'Shift Pagi', 'val' => $shiftPagi, 'icon' => '☀️'],
+                    ['label' => 'Shift Siang', 'val' => $shiftSiang, 'icon' => '🌤️'],
+                    ['label' => 'Shift Malam', 'val' => $shiftMalam, 'icon' => '🌙']
+                ];
+            @endphp
+            @foreach($recapShifts as $s)
+            <div class="col-md-4">
+                <div class="p-3 rounded-4 bg-white shadow-sm d-flex align-items-center card-hover border-0">
+                    <div class="me-3 fs-3">{{ $s['icon'] }}</div>
+                    <div>
+                        <small class="text-muted d-block">{{ $s['label'] }}</small>
+                        <b class="fs-5 text-dark">Rp {{ number_format($s['val'], 0, ',', '.') }}</b>
+                    </div>
+                </div>
+            </div>
+            @endforeach
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const ctx = document.getElementById('myChart');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: {!! json_encode($labels) !!},
-                datasets: [{
-                    label: 'Omzet (Rp)',
-                    data: {!! json_encode($totals) !!},
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('live-clock').innerText = now.toLocaleTimeString('id-ID');
+            }, 1000);
+
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {!! json_encode($labels) !!},
+                    datasets: [{
+                        label: 'Pendapatan',
+                        data: {!! json_encode($totals) !!},
+                        borderColor: '#ea580c',
+                        backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
         });
     </script>
+    <style>
+        .fw-extrabold { font-weight: 800; }
+        .card-hover:hover { transform: translateY(-3px); transition: 0.3s; box-shadow: 0 10px 15px rgba(0,0,0,0.05) !important; }
+    </style>
 </x-app-layout>

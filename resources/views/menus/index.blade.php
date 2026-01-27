@@ -1,123 +1,110 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight italic">
-                {{ __('📜 Kelola Daftar Menu Kafe') }}
-            </h2>
-            <a href="{{ route('menus.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all active:scale-95">
-                + TAMBAH MENU BARU
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-dark mb-0">Kelola Menu Cafe</h2>
+                <p class="text-muted">Daftar semua makanan, minuman, dan snack</p>
+            </div>
+            <a href="{{ route('menus.create') }}" class="btn px-4 py-2 rounded-pill fw-bold text-white shadow-sm btn-hover-zoom" style="background-color: #ea580c;">
+                <i class="bi bi-plus-lg me-2"></i> Tambah Menu Baru
             </a>
         </div>
-    </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
-            @if(session('success'))
-                <div class="bg-green-500 text-white p-4 rounded-lg mb-6 shadow-md font-bold text-center">
-                    ✅ {{ session('success') }}
-                </div>
-            @endif
-
-            <div class="bg-white p-6 rounded-xl shadow-sm mb-8 border border-gray-100">
-                <form action="{{ route('menus.index') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
-                    <div class="flex-1 w-full">
-                        <label class="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Cari Nama Menu</label>
-                        <input type="text" name="search" value="{{ request('search') }}"
-                               placeholder="Contoh: Kopi Susu..."
-                               class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-                    </div>
-
-                    <div class="w-full md:w-64">
-                        <label class="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Filter Kategori</label>
-                        <select name="category" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-                            <option value="">Semua Jenis</option>
-                            <option value="Makanan" {{ request('category') == 'Makanan' ? 'selected' : '' }}>Makanan</option>
-                            <option value="Minuman" {{ request('category') == 'Minuman' ? 'selected' : '' }}>Minuman</option>
-                            <option value="Snack" {{ request('category') == 'Snack' ? 'selected' : '' }}>Snack</option>
-                        </select>
-                    </div>
-
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <button type="submit" class="bg-gray-800 text-white px-8 py-2.5 rounded-lg hover:bg-black font-bold transition-all shadow-md">
-                            CARI
-                        </button>
-                        @if(request('search') || request('category'))
-                            <a href="{{ route('menus.index') }}" class="bg-red-50 text-red-600 px-4 py-2.5 rounded-lg border border-red-200 hover:bg-red-100 font-bold transition-all">
-                                RESET
-                            </a>
-                        @endif
+        <div class="row mb-4 g-3">
+            <div class="col-md-8">
+                <form action="{{ route('menus.index') }}" method="GET" class="d-flex gap-2">
+                    <div class="input-group shadow-sm rounded-pill overflow-hidden bg-white">
+                        <span class="input-group-text bg-white border-0 ps-3">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" name="search" class="form-control border-0 shadow-none py-2"
+                               placeholder="Cari nama menu..." value="{{ request('search') }}">
+                        <button class="btn btn-dark px-4" type="submit">Cari</button>
                     </div>
                 </form>
             </div>
+            <div class="col-md-4">
+                <form action="{{ route('menus.index') }}" method="GET">
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                    <select name="category" class="form-select shadow-sm rounded-pill py-2 border-0" onchange="this.form.submit()">
+                        <option value="">Semua Kategori</option>
+                        <option value="Makanan" {{ request('category') == 'Makanan' ? 'selected' : '' }}>Makanan</option>
+                        <option value="Minuman" {{ request('category') == 'Minuman' ? 'selected' : '' }}>Minuman</option>
+                        <option value="Snack" {{ request('category') == 'Snack' ? 'selected' : '' }}>Snack</option>
+                    </select>
+                </form>
+            </div>
+        </div>
 
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border border-gray-200">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-800 text-white">
+        @if(session('success'))
+            <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4">
+                <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+            </div>
+        @endif
+
+        <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 20px;">
+            <div class="table-responsive p-4">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light text-secondary">
                         <tr>
-                            <th class="px-6 py-4 font-bold uppercase text-sm tracking-wider">Gambar</th>
-                            <th class="px-6 py-4 font-bold uppercase text-sm tracking-wider">Nama Menu</th>
-                            <th class="px-6 py-4 font-bold uppercase text-sm tracking-wider text-center">Status</th>
-                            <th class="px-6 py-4 font-bold uppercase text-sm tracking-wider text-center">Harga</th>
-                            <th class="px-6 py-4 font-bold uppercase text-sm tracking-wider text-center">Stok</th>
-                            <th class="px-6 py-4 font-bold uppercase text-sm tracking-wider text-right">Aksi</th>
+                            <th class="border-0 px-4">Foto</th>
+                            <th class="border-0">Nama Menu</th>
+                            <th class="border-0">Kategori</th>
+                            <th class="border-0 text-end px-4">Harga</th>
+                            <th class="border-0 text-center">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($menus as $menu)
-                        <tr class="{{ $menu->trashed() ? 'bg-red-50' : 'hover:bg-gray-50' }} transition-colors">
-                            <td class="px-6 py-4">
+                    <tbody>
+                        @forelse ($menus as $menu)
+                        <tr>
+                            <td class="px-4">
                                 @if($menu->image)
-                                    <img src="{{ asset('storage/' . $menu->image) }}" class="w-20 h-16 object-cover rounded-xl shadow-sm border-2 border-white {{ $menu->trashed() ? 'grayscale' : '' }}">
+                                    <img src="{{ asset('storage/' . $menu->image) }}" class="rounded shadow-sm object-fit-cover" width="50" height="50">
                                 @else
-                                    <div class="w-20 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs italic text-center">No Image</div>
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-image text-muted"></i>
+                                    </div>
                                 @endif
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="font-black {{ $menu->trashed() ? 'text-gray-400' : 'text-gray-800' }} text-lg">{{ $menu->name }}</div>
-                                <div class="text-xs font-bold text-blue-500 uppercase tracking-tighter">{{ $menu->category }}</div>
+                            <td><div class="fw-bold">{{ $menu->name }}</div></td>
+                            <td><span class="badge bg-light text-dark border">{{ $menu->category }}</span></td>
+                            <td class="text-end px-4 fw-bold text-orange" style="color: #ea580c;">
+                                Rp {{ number_format($menu->price, 0, ',', '.') }}
                             </td>
-                            <td class="px-6 py-4 text-center">
-                                @if($menu->trashed())
-                                    <span class="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold uppercase">Non-Aktif</span>
-                                @else
-                                    <span class="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-bold uppercase">Aktif</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="{{ $menu->trashed() ? 'text-gray-400' : 'text-green-600' }} font-bold text-lg">Rp {{ number_format($menu->price, 0, ',', '.') }}</span>
-                            </td>
-                            <td class="px-6 py-4 text-center font-bold text-gray-600">
-                                {{ $menu->stock }} <span class="text-[10px] text-gray-400">Porsi</span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex justify-end gap-2">
-                                    @if($menu->trashed())
-                                        <form action="{{ route('menus.restore', $menu->id) }}" method="POST">
-                                            @csrf @method('PATCH')
-                                            <button type="submit" class="bg-green-600 text-white px-4 py-1.5 rounded-md text-sm font-bold hover:bg-green-700 transition shadow-sm uppercase">Aktifkan</button>
-                                        </form>
-                                    @else
-                                        <a href="{{ route('menus.edit', $menu->id) }}" class="bg-orange-500 text-white px-4 py-1.5 rounded-md text-sm font-bold hover:bg-orange-600 transition shadow-sm">EDIT</a>
-                                        <form action="{{ route('menus.destroy', $menu->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menonaktifkan menu {{ $menu->name }}?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-bold hover:bg-red-700 transition shadow-sm uppercase">Hapus</button>
-                                        </form>
-                                    @endif
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{{ route('menus.edit', $menu->id) }}" class="btn btn-sm btn-outline-warning rounded-pill px-3">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </a>
+                                    <form action="{{ route('menus.destroy', $menu->id) }}" method="POST" onsubmit="return confirm('Pindahkan menu ke arsip database?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                            <i class="bi bi-trash"></i> Hapus
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-20 text-center text-gray-500 font-bold italic text-xl">
-                                🥤 Menu tidak ditemukan...
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-egg-fried fs-1 d-block mb-2"></i>
+                                Menu tidak ditemukan.
                             </td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-
         </div>
     </div>
+
+    <style>
+        .btn-hover-zoom { transition: 0.3s; }
+        .btn-hover-zoom:hover { transform: scale(1.05); }
+        .table-hover tbody tr:hover { background-color: #fffaf8; }
+    </style>
 </x-app-layout>

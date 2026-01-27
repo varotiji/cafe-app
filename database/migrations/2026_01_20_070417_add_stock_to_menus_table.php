@@ -9,17 +9,17 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-  public function up(): void
+   public function up(): void
 {
     Schema::table('menus', function (Blueprint $table) {
-        $table->softDeletes(); // Menambahkan kolom deleted_at
+        $table->integer('stock')->default(0)->after('price');
     });
 }
 
 public function down(): void
 {
     Schema::table('menus', function (Blueprint $table) {
-        $table->dropSoftDeletes();
+        $table->dropColumn('stock');
     });
 }
 };

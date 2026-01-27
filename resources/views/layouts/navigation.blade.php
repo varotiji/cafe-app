@@ -1,30 +1,31 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('pos') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-orange-600" />
+                    <a href="{{ route('pos') }}" class="flex items-center gap-2 no-underline">
+                        <img src="https://cdn-icons-png.flaticon.com/512/924/924514.png" class="h-9 w-auto">
+                        <span class="text-orange-600 font-bold text-xl tracking-tight">Cafe Premium</span>
                     </a>
                 </div>
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('pos')" :active="request()->routeIs('pos')">
-                        {{ __('🛒 Kasir / POS') }}
+                        {{ __('🛒 Kasir') }}
                     </x-nav-link>
 
                     <x-nav-link :href="route('history')" :active="request()->routeIs('history')">
                         {{ __('📜 History') }}
                     </x-nav-link>
 
-                    @can('admin-only')
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('📊 Dashboard Admin') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('menus.index')" :active="request()->routeIs('menus.*')">
-                        {{ __('🍔 Kelola Menu') }}
-                    </x-nav-link>
-                    @endcan
+                    @if(Auth::user()->role == 'admin')
+                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                            {{ __('📊 Dashboard') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('menus.index')" :active="request()->routeIs('menus.*')">
+                            {{ __('🍔 Menu') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -33,10 +34,11 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div class="flex flex-col text-right mr-2">
-                                <span class="text-xs text-gray-400 font-bold uppercase">{{ Auth::user()->role ?? 'User' }}</span>
-                                <span class="font-black text-gray-800">{{ Auth::user()->name }}</span>
+                            <div class="flex flex-col text-right mr-3">
+                                <span class="text-xs text-orange-600 font-bold uppercase tracking-widest">{{ Auth::user()->role }} - {{ Auth::user()->shift }}</span>
+                                <span class="font-bold text-gray-800">{{ Auth::user()->name }}</span>
                             </div>
+
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -47,14 +49,13 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile Settings') }}
+                            {{ __('⚙️ Profile Settings') }}
                         </x-dropdown-link>
 
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();"
+                                    onclick="event.preventDefault(); this.closest('form').submit();"
                                     class="text-red-600 font-bold">
                                 {{ __('🚪 Log Out') }}
                             </x-dropdown-link>
@@ -63,6 +64,6 @@
                 </x-dropdown>
                 @endauth
             </div>
-            </div>
+        </div>
     </div>
 </nav>
