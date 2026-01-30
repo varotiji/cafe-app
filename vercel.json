@@ -2,8 +2,7 @@
   "version": 2,
   "functions": {
     "api/index.php": {
-      "runtime": "vercel-php@0.7.5",
-      "config": { "nodeVersion": "20.x" }
+      "runtime": "vercel-php@0.7.5"
     }
   },
   "routes": [
