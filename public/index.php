@@ -1,31 +1,30 @@
 <?php
 
-// Ganti kode mkdir yang tadi dengan ini agar tidak muncul Warning
-if (!file_exists('/tmp/storage/framework/views')) {
-    mkdir('/tmp/storage/framework/views', 0755, true);
-}
-if (!file_exists('/tmp/storage/framework/cache')) {
-    mkdir('/tmp/storage/framework/cache', 0755, true);
-}
-if (!file_exists('/tmp/storage/framework/sessions')) {
-    mkdir('/tmp/storage/framework/sessions', 0755, true);
-}
-
-use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// Determine if the application is in maintenance mode...
+// --- TAMBAHKAN KODE INI DI SINI ---
+if (isset($_SERVER['VERCEL_URL'])) {
+    $storageDirs = [
+        '/tmp/storage/framework/views',
+        '/tmp/storage/framework/cache',
+        '/tmp/storage/framework/sessions',
+    ];
+    foreach ($storageDirs as $dir) {
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
+        }
+    }
+}
+// ---------------------------------
+
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;
 }
 
-// Register the Composer autoloader...
 require __DIR__.'/../vendor/autoload.php';
 
-// Bootstrap Laravel and handle the request...
-/** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
 $app->handleRequest(Request::capture());
