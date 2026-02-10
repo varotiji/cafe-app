@@ -1,9 +1,15 @@
 <?php
 
-// Pastikan folder folder sementara ada untuk Vercel
-mkdir('/tmp/storage/framework/views', 0755, true);
-mkdir('/tmp/storage/framework/cache', 0755, true);
-mkdir('/tmp/storage/framework/sessions', 0755, true);
+// Ganti kode mkdir yang tadi dengan ini agar tidak muncul Warning
+if (!file_exists('/tmp/storage/framework/views')) {
+    mkdir('/tmp/storage/framework/views', 0755, true);
+}
+if (!file_exists('/tmp/storage/framework/cache')) {
+    mkdir('/tmp/storage/framework/cache', 0755, true);
+}
+if (!file_exists('/tmp/storage/framework/sessions')) {
+    mkdir('/tmp/storage/framework/sessions', 0755, true);
+}
 
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
