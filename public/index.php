@@ -1,5 +1,10 @@
 <?php
 
+// Pastikan folder folder sementara ada untuk Vercel
+mkdir('/tmp/storage/framework/views', 0755, true);
+mkdir('/tmp/storage/framework/cache', 0755, true);
+mkdir('/tmp/storage/framework/sessions', 0755, true);
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
