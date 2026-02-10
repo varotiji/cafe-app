@@ -1,18 +1,17 @@
 <x-app-layout>
     <div class="container-fluid py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
             <div>
                 <h2 class="fw-bold text-dark mb-1">🕒 History Penjualan</h2>
-                <p class="text-muted">Daftar semua transaksi yang berhasil diproses.</p>
+                <p class="text-muted mb-0">Daftar semua transaksi yang berhasil diproses.</p>
             </div>
-            <button onclick="window.location.reload()" class="btn btn-outline-dark rounded-pill px-4">
+            <button onclick="window.location.reload()" class="btn btn-outline-dark rounded-pill px-4 w-100 w-md-auto">
                 <i class="bi bi-arrow-clockwise"></i> Refresh Data
             </button>
         </div>
 
         <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 20px;">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+            <div class="table-responsive"> <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
                             <th class="ps-4">ID TRANS</th>
@@ -27,15 +26,15 @@
                         @forelse($transactions as $trans)
                         <tr>
                             <td class="ps-4 fw-bold text-primary">#{{ $trans->id }}</td>
-                            <td>{{ $trans->created_at->format('d M Y, H:i') }}</td>
+                            <td class="text-nowrap">{{ $trans->created_at->format('d M Y, H:i') }}</td>
                             <td>
-                                <ul class="list-unstyled mb-0 small">
+                                <ul class="list-unstyled mb-0 small" style="min-width: 150px;">
                                     @foreach($trans->details as $detail)
                                         <li>• {{ $detail->menu->name ?? 'Menu Dihapus' }} (x{{ $detail->quantity }})</li>
                                     @endforeach
                                 </ul>
                             </td>
-                            <td class="fw-bold">Rp {{ number_format($trans->total_price, 0, ',', '.') }}</td>
+                            <td class="fw-bold text-nowrap">Rp {{ number_format($trans->total_price, 0, ',', '.') }}</td>
                             <td>
                                 <span class="badge rounded-pill {{ $trans->payment_method == 'Tunai' ? 'bg-success' : 'bg-info text-dark' }}">
                                     {{ $trans->payment_method }}
@@ -58,8 +57,9 @@
                 </table>
             </div>
         </div>
-        <div class="mt-3">
-            {{ $transactions->links() }}
-        </div>
+
+       <div class="mt-4 d-flex justify-content-center">
+    {{ $transactions->links('pagination::bootstrap-5') }}
+</div>
     </div>
 </x-app-layout>

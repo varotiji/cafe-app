@@ -1,0 +1,39 @@
+<div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark shadow" style="min-height: 100vh;">
+    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+        <span class="fs-4 fw-bold">☕ Cafe Pro</span>
+    </a>
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a href="/dashboard" class="nav-link {{ Request::is('dashboard') ? 'active' : 'text-white' }}">
+                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </a>
+        </li>
+        <li>
+            <a href="/kasir" class="nav-link {{ Request::is('kasir*') ? 'active' : 'text-white' }}">
+                <i class="bi bi-cart3 me-2"></i> Kasir
+            </a>
+        </li>
+        <li>
+            <a href="/menu" class="nav-link {{ Request::is('menu*') ? 'active' : 'text-white' }}">
+                <i class="bi bi-cup-hot me-2"></i> Kelola Menu
+            </a>
+        </li>
+        <li>
+            <a href="/history" class="nav-link {{ Request::is('history*') ? 'active' : 'text-white' }}">
+                <i class="bi bi-clock-history me-2"></i> Riwayat Penjualan
+            </a>
+        </li>
+    </ul>
+    <hr>
+    <div class="dropdown">
+        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+            <strong>Admin</strong>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+            <li><a class="dropdown-item" href="#">Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="/logout">Sign out</a></li>
+        </ul>
+    </div>
+</div>
